@@ -347,3 +347,20 @@ void save_image(const char *filename, Image *image) {
 
     delete[] cpu_data;
 }
+
+int main(int argc, char *argv[]) {
+
+    if (argc != 2) {
+        printf("Usage: %s <input_file>\n", argv[0]);
+        return 1;
+    }
+
+    const char *input_filename = argv[1];
+    Job jobs[1024];
+    int num_jobs = 0;
+
+    read_jobs(input_filename, jobs, &num_jobs);
+    execute_jobs(jobs, num_jobs);
+
+    return 0;
+}
