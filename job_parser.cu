@@ -142,3 +142,30 @@ __global__ void channel_correction_kernel(Image img, float red, float green, flo
         img.data[idx + 2] = max(0, min(255, (int)(img.data[idx + 2] * blue)));
     }
 }
+
+__global__ void apply_convolution_kernel(Image img_in, Image img_out, const float * __restrict__ filter, int filter_width) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < img_in.width && y < img_in.height) {
+        int idx = (y * img_in.width + x) * img_in.channels;
+        float sum[3] = {0.0f, 0.0f, 0.0f};
+
+        for (int ky = -filter_width / 2; ky <= filter_width / 2; ky++) {
+            for (int kx = -filter_width / 2; kx <= filter_width / 2; kx++) {
+                int ix = min(max(x + kx, 0), img_in.width - 1);
+                int iy = min(max(y + ky, 0), img_in.height - 1);
+                int k_idx = (ky + filter_width / 2) * filter_width + (kx + filter_width / 2);
+                int img_idx = (iy * img_in.width + ix) * img_in.channels;
+
+                for (int c = 0; c < img_in.channels; c++) {
+                    sum[c] += img_in.data[img_idx + c] * filter[k_idx];
+                }
+            }
+        }
+
+        for (int c = 0; c < img_in.channels; c++) {
+            img_out.data[idx + c] = max(0, min(255, (int)sum[c]));
+        }
+    }
+}
