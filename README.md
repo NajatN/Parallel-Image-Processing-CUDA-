@@ -4,7 +4,7 @@
 _____________
 Google Colab provides a free-to-use environment equipped with GPUs that support CUDA. Here's a step-by-step guide on how to run this project on Google Colab:
 
-### Step 1: Upload Your Files
+### Step 1: Upload Your Files :file_folder:
 
 You can upload files to Google Colab using the file explorer in the left panel of your notebook. Alternatively, you can run the following Python commands in a cell:
 
@@ -14,7 +14,7 @@ uploaded = files.upload()
 ```
 This will create a "Choose Files" button, which you can use to upload your files.
 
-### Step 2: Run the CUDA Code
+### Step 2: Run the CUDA Code :computer:
 To compile your CUDA code, you can use the nvcc command. For example, to compile the job_parser.cu file, you would run:
 
 ```
@@ -27,7 +27,7 @@ To run the compiled file, you would use:
 !./job_parser
 ```
 
-### Step 4: Download the Processed Images
+### Step 3: Download the Processed Images :city_sunrise:
 If your CUDA code generates output files, you can download them using the file explorer in the left panel. Alternatively, you can run the following Python commands in a cell:
 
 ```python
