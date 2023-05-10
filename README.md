@@ -40,7 +40,7 @@ If your CUDA code generates output files (like processed images), you can downlo
 
 - **Option 1:** Use the file explorer in the left-hand panel of your Colab notebook. You'll see your output files listed there. Right-click on a file and select "Download" to save it to your local machine.
 - **Option 2:** Use the following Python commands in a new Colab cell:
-```
+```python
 from google.colab import files
 files.download('your_filename')
 ```
