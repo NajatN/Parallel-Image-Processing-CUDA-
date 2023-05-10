@@ -116,3 +116,17 @@ __global__ void brightness_kernel(Image img_in, Image img_out, int value) {
         }
     }
 }
+
+__global__ void grayscale_kernel(Image img_in, Image img_out) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < img_in.width && y < img_in.height) {
+        int idx = (y * img_in.width + x) * img_in.channels;
+        float gray = 0.299f * img_in.data[idx] + 0.587f * img_in.data[idx + 1] + 0.114f * img_in.data[idx + 2];
+        unsigned char gray_int = max(0, min(255, (int)gray));
+        img_out.data[idx] = gray_int;
+        img_out.data[idx + 1] = gray_int;
+        img_out.data[idx + 2] = gray_int;
+    }
+}
