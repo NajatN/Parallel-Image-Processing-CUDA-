@@ -280,3 +280,54 @@ void debug_image(const char *filename, Image *image) {
 
     delete[] cpu_data;
 }
+
+void execute_jobs(Job *jobs, int num_jobs) {
+    for (int i = 0; i < num_jobs; i++) {
+        Image img_in, img_out, img_in_cpu;
+        load_image(jobs[i].input_filename, &img_in_cpu);
+
+        // Allocate GPU memory for the input image and copy the data
+        cudaMalloc((void **)&img_in.data, img_in_cpu.width * img_in_cpu.height * img_in_cpu.channels);
+        cudaMemcpy(img_in.data, img_in_cpu.data, img_in_cpu.width * img_in_cpu.height * img_in_cpu.channels, cudaMemcpyHostToDevice);
+        
+        img_in.width = img_in_cpu.width;
+        img_in.height = img_in_cpu.height;
+        img_in.channels = img_in_cpu.channels;
+
+        // Allocate GPU memory for the output image
+        cudaMalloc((void **)&img_out.data, img_in.width * img_in.height * img_in.channels);
+        cudaMemcpy(img_out.data, img_in.data, img_in.width * img_in.height * img_in.channels, cudaMemcpyHostToDevice);
+        img_out.width = img_in.width;
+        img_out.height = img_in.height;
+        img_out.channels = img_in.channels;
+
+        dim3 blockDim(32, 32);
+        dim3 gridDim((img_in.width + blockDim.x - 1) / blockDim.x, (img_in.height + blockDim.y - 1) / blockDim.y);
+
+        if (strcmp(jobs[i].algorithm_name, "brightness") == 0) {
+            int value = 50; // Set the desired brightness value
+            brightness_kernel<<<gridDim, blockDim>>>(img_in, img_out, value);
+        } else if (strcmp(jobs[i].algorithm_name, "grayscale") == 0) {
+            grayscale_kernel<<<gridDim, blockDim>>>(img_in, img_out);
+        } else if (strcmp(jobs[i].algorithm_name, "channel_correction") == 0) {
+            float red = 1.0f, green = 1.0f, blue = 1.0f; // Set the desired channel correction factors
+            channel_correction_kernel<<<gridDim, blockDim>>>(img_in, red, green, blue);
+        } else if (strcmp(jobs[i].algorithm_name, "blurring") == 0) {
+            int kernel_size = 5; // Set the desired kernel size for the blurring algorithm
+            blurring_kernel(img_in, img_out, kernel_size, blockDim, gridDim);
+        } else if (strcmp(jobs[i].algorithm_name, "sharpening") == 0) {
+            int kernel_size = 3; // Set the desired kernel size for the sharpening algorithm
+            sharpening_kernel(img_in, img_out, kernel_size, blockDim, gridDim);
+        } else if (strcmp(jobs[i].algorithm_name, "edge_detection") == 0) {
+            int kernel_size = 3; // Set the desired kernel size for the edge detection algorithm
+            edge_detection_kernel(img_in, img_out, kernel_size, blockDim, gridDim);
+        }
+        cudaDeviceSynchronize();
+
+        // Save the processed image and deallocate GPU memory
+        debug_image(jobs[i].output_filename, &img_out);
+        cudaFree(img_in.data);
+        cudaFree(img_out.data);
+        free(img_in_cpu.data);
+    }
+}
