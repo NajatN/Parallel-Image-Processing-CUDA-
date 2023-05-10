@@ -104,3 +104,15 @@ void load_image(const char *filename, Image *image) {
 
     printf("Loaded image: %s (%d x %d x %d)\n", filename, image->width, image->height, image->channels);
 }
+
+__global__ void brightness_kernel(Image img_in, Image img_out, int value) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < img_in.width && y < img_in.height) {
+        int idx = (y * img_in.width + x) * img_in.channels;
+        for (int c = 0; c < img_in.channels; c++) {
+            img_out.data[idx + c] = max(0, min(255, img_in.data[idx + c] + value));
+        }
+    }
+}
