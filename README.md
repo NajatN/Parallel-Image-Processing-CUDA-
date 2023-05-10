@@ -1,8 +1,7 @@
-# Parallel Image Processing with CUDA :computer: :camera:
+# Parallel Image Processing with CUDA
 Welcome to the Parallel Image Processing project utilizing CUDA for fast, efficient image processing tasks. This project harnesses the power of parallel computing to manipulate images in various ways. If you're interested in CUDA and image processing, you've come to the right place!
 
 ## Getting Started :rocket:
---------------------------
 This project is designed to be run on [Google Colab](https://colab.research.google.com/), a cloud-based Python environment that provides free access to GPUs. Here's a step-by-step guide to getting the project up and running.
 
 ### Step 1: Preparation :file_folder:
@@ -48,5 +47,4 @@ files.download('your_filename')
 Replace 'your_filename' with the name of your output file.
 
 ## Wrapping Up :gift:
---------------------------
 That's it! You're now ready to perform parallel image processing with CUDA on Google Colab. Enjoy your journey into the world of parallel computing and image processing! :rocket:
