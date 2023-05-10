@@ -39,3 +39,68 @@ void read_jobs(const char *filename, Job *jobs, int *num_jobs) {
     }
     fclose(file);
 }
+
+void load_image(const char *filename, Image *image) {
+    FILE *fp = fopen(filename, "rb");
+    if (!fp) {
+        fprintf(stderr, "Error opening image: %s\n", filename);
+        exit(EXIT_FAILURE);
+    }
+
+    png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    if (!png) {
+        fclose(fp);
+        fprintf(stderr, "Error creating PNG read struct\n");
+        exit(EXIT_FAILURE);
+    }
+
+    png_infop info = png_create_info_struct(png);
+    if (!info) {
+        fclose(fp);
+        png_destroy_read_struct(&png, NULL, NULL);
+        fprintf(stderr, "Error creating PNG info struct\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (setjmp(png_jmpbuf(png))) {
+        fclose(fp);
+        png_destroy_read_struct(&png, &info, NULL);
+        fprintf(stderr, "Error during PNG init_io\n");
+        exit(EXIT_FAILURE);
+    }
+
+    png_init_io(png, fp);
+    png_read_info(png, info);
+
+    image->width = png_get_image_width(png, info);
+    image->height = png_get_image_height(png, info);
+    image->channels = png_get_channels(png, info);
+
+    if (image->channels == 4) {
+        png_set_strip_alpha(png);
+        image->channels = 3;
+    }
+
+    png_read_update_info(png, info);
+
+    image->data = (unsigned char *)malloc(image->width * image->height * image->channels);
+    if (!image->data) {
+        fclose(fp);
+        png_destroy_read_struct(&png, &info, NULL);
+        fprintf(stderr, "Error allocating memory for the image\n");
+        exit(EXIT_FAILURE);
+    }
+
+    png_bytep *row_pointers = (png_bytep *)malloc(image->height * sizeof(png_bytep));
+    for (int y = 0; y < image->height; y++) {
+        row_pointers[y] = (png_byte *)(image->data + y * image->width * image->channels);
+    }
+
+    png_read_image(png, row_pointers);
+
+    fclose(fp);
+    png_destroy_read_struct(&png, &info, NULL);
+    free(row_pointers);
+
+    printf("Loaded image: %s (%d x %d x %d)\n", filename, image->width, image->height, image->channels);
+}
