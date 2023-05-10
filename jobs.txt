@@ -1,0 +1,6 @@
+image_big.png brightness output.png
+image_big.png blurring output2.png
+image_big.png edge_detection output3.png
+image_big.png channel_correction output4.png
+image_big.png grayscale output5.png
+image_big.png sharpening output6.png
