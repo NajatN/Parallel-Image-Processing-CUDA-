@@ -22,3 +22,20 @@ typedef struct {
     int height;
     int channels;
 } Image;
+
+void save_image(const char *filename, Image *image);
+
+void read_jobs(const char *filename, Job *jobs, int *num_jobs) {
+    FILE *file = fopen(filename, "r");
+    if (!file) {
+        perror("Error opening input file");
+        exit(EXIT_FAILURE);
+    }
+    char line[1024];
+    *num_jobs = 0;
+    while (fgets(line, sizeof(line), file)) {
+        sscanf(line, "%s %s %s", jobs[*num_jobs].input_filename, jobs[*num_jobs].algorithm_name, jobs[*num_jobs].output_filename);
+        (*num_jobs)++;
+    }
+    fclose(file);
+}
