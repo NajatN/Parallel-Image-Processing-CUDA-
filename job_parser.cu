@@ -130,3 +130,15 @@ __global__ void grayscale_kernel(Image img_in, Image img_out) {
         img_out.data[idx + 2] = gray_int;
     }
 }
+
+__global__ void channel_correction_kernel(Image img, float red, float green, float blue) {
+    int x = blockIdx.x * blockDim.x + threadIdx.x;
+    int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+    if (x < img.width && y < img.height) {
+        int idx = (y * img.width + x) * img.channels;
+        img.data[idx] = max(0, min(255, (int)(img.data[idx] * red)));
+        img.data[idx + 1] = max(0, min(255, (int)(img.data[idx + 1] * green)));
+        img.data[idx + 2] = max(0, min(255, (int)(img.data[idx + 2] * blue)));
+    }
+}
