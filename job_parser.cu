@@ -331,3 +331,19 @@ void execute_jobs(Job *jobs, int num_jobs) {
         free(img_in_cpu.data);
     }
 }
+
+void save_image(const char *filename, Image *image) {
+    // Copy image data from GPU to CPU before saving
+    unsigned char *cpu_data = new unsigned char[image->width * image->height * 3];
+    cudaMemcpy(cpu_data, image->data, image->width * image->height * 3, cudaMemcpyDeviceToHost);
+
+    printf("Saving image: %s (%d x %d x %d)\n", filename, image->width, image->height, 3);
+
+    // Save the image using stb_image_write
+    if (!stbi_write_png(filename, image->width, image->height, 3, cpu_data, image->width * 3)) {
+        fprintf(stderr, "Error saving image: %s\n", filename);
+        exit(EXIT_FAILURE);
+    }
+
+    delete[] cpu_data;
+}
