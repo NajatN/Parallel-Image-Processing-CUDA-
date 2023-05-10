@@ -169,3 +169,51 @@ __global__ void apply_convolution_kernel(Image img_in, Image img_out, const floa
         }
     }
 }
+
+void blurring_kernel(Image img_in, Image img_out, int kernel_size, dim3 blockDim, dim3 gridDim) {
+    float *filter = new float[kernel_size * kernel_size];
+    for (int i = 0; i < kernel_size * kernel_size; i++) {
+        filter[i] = 1.0f / (kernel_size * kernel_size);
+    }
+    
+    float *filter_gpu;
+    cudaMalloc((void **)&filter_gpu, kernel_size * kernel_size * sizeof(float));
+    cudaMemcpy(filter_gpu, filter, kernel_size * kernel_size * sizeof(float), cudaMemcpyHostToDevice);
+    
+    apply_convolution_kernel<<<gridDim, blockDim>>>(img_in, img_out, filter_gpu, kernel_size);
+    
+    cudaFree(filter_gpu);
+    delete[] filter;
+}
+
+void sharpening_kernel(Image img_in, Image img_out, int kernel_size, dim3 blockDim, dim3 gridDim) {
+    float *filter = new float[kernel_size * kernel_size];
+    for (int i = 0; i < kernel_size * kernel_size; i++) {
+        filter[i] = (i == kernel_size * kernel_size / 2) ? kernel_size * kernel_size - 1 : -1;
+    }
+
+    float *filter_gpu;
+    cudaMalloc((void **)&filter_gpu, kernel_size * kernel_size * sizeof(float));
+    cudaMemcpy(filter_gpu, filter, kernel_size * kernel_size * sizeof(float), cudaMemcpyHostToDevice);
+    
+    apply_convolution_kernel<<<gridDim, blockDim>>>(img_in, img_out, filter_gpu, kernel_size);
+    
+    cudaFree(filter_gpu);
+    delete[] filter;
+}
+
+void edge_detection_kernel(Image img_in, Image img_out, int kernel_size, dim3 blockDim, dim3 gridDim) {
+    float *filter = new float[kernel_size * kernel_size];
+    for (int i = 0; i < kernel_size * kernel_size; i++) {
+        filter[i] = (i == kernel_size * kernel_size / 2) ? -(kernel_size * kernel_size - 1) : 1;
+    }
+    
+    float *filter_gpu;
+    cudaMalloc((void **)&filter_gpu, kernel_size * kernel_size * sizeof(float));
+    cudaMemcpy(filter_gpu, filter, kernel_size * kernel_size * sizeof(float), cudaMemcpyHostToDevice);
+    
+    apply_convolution_kernel<<<gridDim, blockDim>>>(img_in, img_out, filter_gpu, kernel_size);
+    
+    cudaFree(filter_gpu);
+    delete[] filter;
+}
