@@ -217,3 +217,66 @@ void edge_detection_kernel(Image img_in, Image img_out, int kernel_size, dim3 bl
     cudaFree(filter_gpu);
     delete[] filter;
 }
+
+void debug_image(const char *filename, Image *image) {
+    unsigned char *cpu_data = new unsigned char[image->width * image->height * image->channels];
+    cudaMemcpy(cpu_data, image->data, image->width * image->height * image->channels, cudaMemcpyDeviceToHost);
+
+    FILE *fp = fopen(filename, "wb");
+    if (!fp) {
+        fprintf(stderr, "Error opening image: %s\n", filename);
+        exit(EXIT_FAILURE);
+    }
+
+    png_structp png = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    if (!png) {
+        fclose(fp);
+        fprintf(stderr, "Error creating PNG write struct\n");
+        exit(EXIT_FAILURE);
+    }
+
+    png_infop info = png_create_info_struct(png);
+    if (!info) {
+        fclose(fp);
+        png_destroy_write_struct(&png, NULL);
+        fprintf(stderr, "Error creating PNG info struct\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (setjmp(png_jmpbuf(png))) {
+        fclose(fp);
+        png_destroy_write_struct(&png, &info);
+        fprintf(stderr, "Error during PNG init_io\n");
+        exit(EXIT_FAILURE);
+    }
+
+    png_init_io(png, fp);
+
+    png_set_IHDR(png,
+                 info,
+                 image->width,
+                 image->height,
+                 8,
+                 image->channels == 3 ? PNG_COLOR_TYPE_RGB : PNG_COLOR_TYPE_RGBA,
+                 PNG_INTERLACE_NONE,
+                 PNG_COMPRESSION_TYPE_DEFAULT,
+                 PNG_FILTER_TYPE_DEFAULT);
+
+    png_write_info(png, info);
+
+    png_bytep *row_pointers = (png_bytep *)malloc(image->height * sizeof(png_bytep));
+    for (int y = 0; y < image->height; y++) {
+        row_pointers[y] = (png_byte *)(cpu_data + y * image->width * image->channels);
+    }
+
+    png_write_image(png, row_pointers);
+    png_write_end(png, NULL);
+
+    fclose(fp);
+    png_destroy_write_struct(&png, &info);
+    free(row_pointers);
+
+    printf("Saved image: %s (%d x %d x %d)\n", filename, image->width, image->height, image->channels);
+
+    delete[] cpu_data;
+}
