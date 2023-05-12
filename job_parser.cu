@@ -23,8 +23,6 @@ typedef struct {
     int channels;
 } Image;
 
-void save_image(const char *filename, Image *image);
-
 void read_jobs(const char *filename, Job *jobs, int *num_jobs) {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -218,7 +216,7 @@ void edge_detection_kernel(Image img_in, Image img_out, int kernel_size, dim3 bl
     delete[] filter;
 }
 
-void debug_image(const char *filename, Image *image) {
+void save_image(const char *filename, Image *image) {
     unsigned char *cpu_data = new unsigned char[image->width * image->height * image->channels];
     cudaMemcpy(cpu_data, image->data, image->width * image->height * image->channels, cudaMemcpyDeviceToHost);
 
@@ -313,7 +311,7 @@ void execute_jobs(Job *jobs, int num_jobs) {
             float red = 1.0f, green = 1.0f, blue = 1.0f; // Set the desired channel correction factors
             channel_correction_kernel<<<gridDim, blockDim>>>(img_in, red, green, blue);
         } else if (strcmp(jobs[i].algorithm_name, "blurring") == 0) {
-            int kernel_size = 5; // Set the desired kernel size for the blurring algorithm
+            int kernel_size = 20; // Set the desired kernel size for the blurring algorithm
             blurring_kernel(img_in, img_out, kernel_size, blockDim, gridDim);
         } else if (strcmp(jobs[i].algorithm_name, "sharpening") == 0) {
             int kernel_size = 3; // Set the desired kernel size for the sharpening algorithm
@@ -325,27 +323,11 @@ void execute_jobs(Job *jobs, int num_jobs) {
         cudaDeviceSynchronize();
 
         // Save the processed image and deallocate GPU memory
-        debug_image(jobs[i].output_filename, &img_out);
+        save_image(jobs[i].output_filename, &img_out);
         cudaFree(img_in.data);
         cudaFree(img_out.data);
         free(img_in_cpu.data);
     }
-}
-
-void save_image(const char *filename, Image *image) {
-    // Copy image data from GPU to CPU before saving
-    unsigned char *cpu_data = new unsigned char[image->width * image->height * 3];
-    cudaMemcpy(cpu_data, image->data, image->width * image->height * 3, cudaMemcpyDeviceToHost);
-
-    printf("Saving image: %s (%d x %d x %d)\n", filename, image->width, image->height, 3);
-
-    // Save the image using stb_image_write
-    if (!stbi_write_png(filename, image->width, image->height, 3, cpu_data, image->width * 3)) {
-        fprintf(stderr, "Error saving image: %s\n", filename);
-        exit(EXIT_FAILURE);
-    }
-
-    delete[] cpu_data;
 }
 
 int main(int argc, char *argv[]) {
