@@ -5,10 +5,7 @@
 #include <cuda_runtime_api.h>
 #include <device_launch_parameters.h>
 #include <png.h>
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
+#include <sys/time.h>
 
 typedef struct {
     char input_filename[256];
@@ -22,6 +19,12 @@ typedef struct {
     int height;
     int channels;
 } Image;
+
+long long timeInMilliseconds(void) {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (((long long)tv.tv_sec) * 1000) + (tv.tv_usec / 1000);
+}
 
 void read_jobs(const char *filename, Job *jobs, int *num_jobs) {
     FILE *file = fopen(filename, "r");
@@ -280,9 +283,12 @@ void save_image(const char *filename, Image *image) {
 }
 
 void execute_jobs(Job *jobs, int num_jobs) {
+    long long total_start_time = timeInMilliseconds();
     for (int i = 0; i < num_jobs; i++) {
         Image img_in, img_out, img_in_cpu;
         load_image(jobs[i].input_filename, &img_in_cpu);
+
+        long long start = timeInMilliseconds();
 
         // Allocate GPU memory for the input image and copy the data
         cudaMalloc((void **)&img_in.data, img_in_cpu.width * img_in_cpu.height * img_in_cpu.channels);
@@ -324,10 +330,17 @@ void execute_jobs(Job *jobs, int num_jobs) {
 
         // Save the processed image and deallocate GPU memory
         save_image(jobs[i].output_filename, &img_out);
+
+        long long end = timeInMilliseconds();
+
+        printf("Timing on device is %lld millis\n", end - start);
+
         cudaFree(img_in.data);
         cudaFree(img_out.data);
         free(img_in_cpu.data);
     }
+    long long total_end_time = timeInMilliseconds();
+    printf("Total timing on device is %lld millis\n", total_end_time - total_start_time);
 }
 
 int main(int argc, char *argv[]) {
